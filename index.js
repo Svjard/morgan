@@ -61,6 +61,12 @@ exports = module.exports = function morgan(format, options) {
   // output on request instead of response
   var immediate = options.immediate;
 
+  // if we are running in dev mode
+  var dev = options.dev;
+
+  // dbs settings for logging to the database
+  var dbs = options.dbs;
+
   // check if log entry should be skipped
   var skip = options.skip || function () { return false; };
 
@@ -123,7 +129,13 @@ exports = module.exports = function morgan(format, options) {
       }
 
       debug('log request')
-      stream.write(line + '\n')
+      if (dev) {
+        stream.write(line + '\n')
+      }
+      else {
+        // in product commit to the database
+        dbs.gsstools.log.insert(line, { 'w': 0 });
+      }
     };
 
     // immediate
@@ -191,6 +203,13 @@ exports.format = function(name, fmt){
   exports[name] = fmt;
   return this;
 };
+
+/**
+ * Apache combined log format in json.
+ */
+
+exports.format('combined-json', '{\'remoteAddr\': \':remote-addr\', \'user\': \':remote-user\', \'timestamp\': :date[clf], \'method\': \':method\', \'url\': \':url\', \'version\': \'HTTP/:http-version\', \'status\': \':status\', \'res\': \':res[content-length]\', \'userAgent\': \':user-agent\'}')
+
 
 /**
  * Apache combined log format.
@@ -313,8 +332,7 @@ exports.token('remote-addr', getip);
  */
 
 exports.token('remote-user', function (req) {
-  var creds = auth(req)
-  var user = (creds && creds.name) || '-'
+  var user = (req.session && req.session.employeeId) || '-'
   return user;
 })
 
