@@ -16,6 +16,7 @@ var auth = require('basic-auth')
 var debug = require('debug')('morgan')
 var deprecate = require('depd')('morgan')
 var onFinished = require('on-finished')
+var util = require('util')
 
 /**
  * Array of CLF month names.
@@ -56,7 +57,7 @@ exports = module.exports = function morgan(format, options) {
     deprecate('undefined format: specify a format')
   }
 
-  options = options || {}
+  options = options || {} 
 
   // output on request instead of response
   var immediate = options.immediate;
@@ -66,6 +67,9 @@ exports = module.exports = function morgan(format, options) {
 
   // dbs settings for logging to the database
   var dbs = options.dbs;
+
+  // hold on to the tools name
+  var tool = options.tool;
 
   // check if log entry should be skipped
   var skip = options.skip || function () { return false; };
@@ -129,12 +133,14 @@ exports = module.exports = function morgan(format, options) {
       }
 
       debug('log request')
-      if (dev) {
+      if (dev === true) {
         stream.write(line + '\n')
       }
       else {
-        // in product commit to the database
-        dbs.gsstools.log.insert(line, { 'w': 0 });
+        var o = JSON.parse(line);
+        o.timestamp = new Date(o.timestamp);
+        o.tool = tool;
+        dbs.gsstools.log.insert(o, { 'w': 0 });
       }
     };
 
@@ -208,7 +214,7 @@ exports.format = function(name, fmt){
  * Apache combined log format in json.
  */
 
-exports.format('combined-json', '{\'remoteAddr\': \':remote-addr\', \'user\': \':remote-user\', \'timestamp\': :date[clf], \'method\': \':method\', \'url\': \':url\', \'version\': \'HTTP/:http-version\', \'status\': \':status\', \'res\': \':res[content-length]\', \'userAgent\': \':user-agent\'}')
+exports.format('combined-json', '{"remoteAddr": ":remote-addr", "user": ":remote-user", "timestamp": ":date[web]", "responseTime": :response-time, "method": ":method", "url": ":url", "version": "HTTP/:http-version", "status": :status, "res": ":res[content-length]", "userAgent": ":user-agent"}')
 
 
 /**
