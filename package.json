@@ -1,5 +1,5 @@
 {
-  "name": "morgan",
+  "name": "tdmorgan",
   "description": "HTTP request logger middleware for node.js",
   "version": "1.5.1",
   "contributors": [
