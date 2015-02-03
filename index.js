@@ -137,10 +137,16 @@ exports = module.exports = function morgan(format, options) {
         stream.write(line + '\n')
       }
       else {
-        var o = JSON.parse(line);
-        o.timestamp = new Date(o.timestamp);
-        o.tool = tool;
-        dbs.gsstools.log.insert(o, { 'w': 0 });
+        try {
+          var o = JSON.parse(line)
+          o.timestamp = new Date(o.timestamp)
+          o.tool = tool
+          dbs.gsstools.log.insert(o, { 'w': 0 })
+        }
+        catch (e) {
+          // was not valid JSON so we default to dumping to our stream
+          stream.write(line + '\n')
+        }
       }
     };
 
